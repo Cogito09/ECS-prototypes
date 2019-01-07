@@ -39,7 +39,7 @@ public class AudioVisualizationSystemBootstrap : MonoBehaviour
             typeof(Position),
             typeof(Rotation),
             typeof(Scale),
-            typeof(SpectrumCellValueData),
+            typeof(SpectrumCellIdentityData),
             typeof(SpectrumCellAttachmentData)
             
         );
@@ -55,8 +55,6 @@ public class AudioVisualizationSystemBootstrap : MonoBehaviour
           typeof(Attach)
         );
 
-
-
         EntityArchetype VisualizerInstanceArchetype = entityManager.CreateArchetype(
             typeof(VisualizerIDData),
             typeof(Position),
@@ -65,46 +63,31 @@ public class AudioVisualizationSystemBootstrap : MonoBehaviour
 
         Entity VisualizerInstance = entityManager.CreateEntity(VisualizerInstanceArchetype); 
             entityManager.SetComponentData(VisualizerInstance, new VisualizerIDData { VizualizerID = VisualizerInstance.Index });
-            entityManager.SetComponentData(VisualizerInstance, new Position { Value = new float3(-5, 10, -10 ) });
+            entityManager.SetComponentData(VisualizerInstance, new Position { Value = new float3(-5, 10, 50 ) });
             entityManager.SetComponentData(VisualizerInstance, new Rotation { Value = quaternion.identity });
 
-        int loadindex = 0;
-        int VisualizerInstanceLoadingIndex = 0;
         for (int i = 0; i < audioVisualizationSystemBootstrap.SubVisualizarsCapacity; i++)
         {
-            loadindex++;
             Entity singleVisualizaerCellEntity = entityManager.CreateEntity(VisualizerCellArchetype);
 
             entityManager.SetComponentData(singleVisualizaerCellEntity, new Position
             {
-                Value = VisualizerBuilder.Instance.FindPositionForSphericalVisualizerForStickAtIndex(i)//new float3(0, 0, 0)
+                Value = VisualizerBuilder.Instance.FindPositionForVisualizerForCellAtIndex(i)
             });
             entityManager.SetComponentData(singleVisualizaerCellEntity, new Rotation
             {
-                Value = VisualizerBuilder.Instance.FindRotationForSphericalVisualizerForStickAtIndex(i)
+                Value = VisualizerBuilder.Instance.FindRotationForVisualizerForCellAtIndex(i)
             });
             entityManager.SetComponentData(singleVisualizaerCellEntity, new Scale
             {
-                Value = VisualizerBuilder.Instance.BaseSize
+                Value = VisualizerBuilder.Instance.BaseVisualiserCellSize
             });
-            entityManager.SetComponentData(singleVisualizaerCellEntity, new SpectrumCellValueData
-            {
-                Value = 0f
-            });
+            entityManager.SetComponentData(singleVisualizaerCellEntity, VisualizerBuilder.Instance.GetSpectrumCellIdentityDataForStickAtIndex(i));
 
 
-            if (i < loadindex)
-            {
-                entityManager.SetComponentData<SpectrumCellAttachmentData>(singleVisualizaerCellEntity, new SpectrumCellAttachmentData
-                {
-                    VisualizerInstanceEntityIndex = VisualizerInstanceLoadingIndex
-                });
-            }
-            else VisualizerInstanceLoadingIndex++;
 
             Entity attachment = entityManager.CreateEntity(Attach);
             entityManager.SetComponentData(attachment, new Attach { Parent = VisualizerInstance, Child = singleVisualizaerCellEntity });
-
             entityManager.AddSharedComponentData<MeshInstanceRenderer>(singleVisualizaerCellEntity, VisualizerCellsRenderer);
         }
 

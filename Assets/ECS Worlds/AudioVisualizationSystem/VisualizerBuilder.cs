@@ -4,26 +4,11 @@ using UnityEngine;
 using Unity.Mathematics;
 using Unity.Collections;
 
-public enum SphereArea
-{
-    I,   
-    II,
-    III,
-    IV,
-    V,
-    VI,
-    VII,
-    VIII
-}
-
 
 public class VisualizerBuilder
 {
-
-    // whole matrix offset by speed calculated on  specturmValue Gain % per second 
     // Sub Base  Push  slightly WHole SPhere 
 
-    // Great thanks to Mr. Marko Rodin  Teachings
     private static VisualizerBuilder _instance;
     public static VisualizerBuilder Instance { get { return _instance; } }
 
@@ -33,7 +18,7 @@ public class VisualizerBuilder
     public float SphericalRowPhaseOffset { get { return (Mathf.PI*2) / SphericalRowsCount; } }
 
     public float DistanceFormOriginMultiplier = 4f;
-    public float3 BaseSize = new float3(2f,2f,2f);
+    public float3 BaseVisualiserCellSize = new float3(2f,2f,2f);
 
     private float3[] _visualizerSticksPositions;
     public float3[] VisualizerSticksPositions
@@ -58,21 +43,38 @@ public class VisualizerBuilder
             }
         }
     }
+    private SpectrumCellIdentityData[] _visualizerSticksIDDatas;
+    public SpectrumCellIdentityData[] visualizerSticksIDDatas
+    {
+        get
+        {
+            if (_visualizerSticksIDDatas != null) { return _visualizerSticksIDDatas; }
+            else
+            {
+                GenerateTemplateVisualizerSphereParameters();
+                return _visualizerSticksIDDatas;
+            }
+        }
+    }
 
-    public float3 FindPositionForSphericalVisualizerForStickAtIndex(int i)
+    public float3 FindPositionForVisualizerForCellAtIndex(int i)
     {
         return VisualizerSticksPositions[i];
     }
 
-    public quaternion FindRotationForSphericalVisualizerForStickAtIndex(int i)
+    public quaternion FindRotationForVisualizerForCellAtIndex(int i)
     {
         return VisualizerSticksRotations[i];
     }
-
+    public SpectrumCellIdentityData GetSpectrumCellIdentityDataForStickAtIndex(int i)
+    {
+        return visualizerSticksIDDatas[i];
+    }
     private void GenerateTemplateVisualizerSphereParameters()
     {
         float3[] linearMatrixPositions = new float3[SphericalRowsCount * NumberOfStickPerSphericalRow];
         quaternion[] linearMatrixQuaternions = new quaternion[SphericalRowsCount * NumberOfStickPerSphericalRow];
+        SpectrumCellIdentityData[] spectrumCellIdentityDatas = new SpectrumCellIdentityData[SphericalRowsCount * NumberOfStickPerSphericalRow];
 
         Dictionary<int, Dictionary<int, float3>> SphericalRowsPositions = new Dictionary<int, Dictionary<int, float3>>();
         Dictionary<int, Dictionary<int, quaternion>> SphericalRowsQuaternions = new Dictionary<int, Dictionary<int, quaternion>>();
@@ -90,41 +92,32 @@ public class VisualizerBuilder
             {
                 linearMatrixPositions[visualizerStickIndex] = SphericalRowsPositions[i][j];
                 linearMatrixQuaternions[visualizerStickIndex] = SphericalRowsQuaternions[i][j];
+                spectrumCellIdentityDatas[visualizerStickIndex] = new SpectrumCellIdentityData
+                {
+                    RowIndex = DefineRowTypeFromGivenRowIndex(i),
+                    CellIndexInRow = j
+                };
                 visualizerStickIndex++;
             }
         }
 
         _visualizerSticksPositions = linearMatrixPositions;
         _visualizerSticksRotations = linearMatrixQuaternions;
+        _visualizerSticksIDDatas = spectrumCellIdentityDatas;
     }
-    public Dictionary<int, quaternion> CalculateRotations(Dictionary<int, float3> rowOfPositions)
+
+    private Dictionary<int, quaternion> CalculateRotations(Dictionary<int, float3> rowOfPositions)
     {
         Dictionary<int, quaternion> rotations = new Dictionary<int, quaternion>();
         for (int i = 0; i < rowOfPositions.Count; i++)
         {
             float3 position = rowOfPositions[i];
-
-            //One Day im gonna make it perfect and rewrrite eveything on 8 Areas 
-
-            GetRotationTowardsPointZeroFor(position);
-
-            //float yrX = position.x;
-            //float yrZ = position.z;
-            //float rotationY;
-            //rotationY = Mathf.Atan2(Mathf.Abs(yrX), Mathf.Abs(yrZ) );
-
-            //float xrY = position.y;
-            //float xrZ = position.z;
-            //float rotationX;
-
-            //rotationX = Mathf.Atan(xrZ / xrY);
-            //rotations[i] = quaternion.LookRotation((float3.zero - position), new float3(0,1,0));
             rotations[i] = GetRotationTowardsPointZeroFor(position);
         }
         return rotations;
     }
 
-private Dictionary<int, float3> GenerateRow(int numberofOrbitationsPerCycle, float offsetAtXZPhase)
+    private Dictionary<int, float3> GenerateRow(int numberofOrbitationsPerCycle, float offsetAtXZPhase)
     {
         Dictionary<int, float3> sphericalRow = new Dictionary<int, float3>();
         float yPosition;
@@ -135,7 +128,7 @@ private Dictionary<int, float3> GenerateRow(int numberofOrbitationsPerCycle, flo
         {
             float alpha = i * BeetweenVisualSticksAngleStep;
 
-            xPosition = Mathf.Sin(alpha ) * Mathf.PI * (Mathf.Cos(offsetAtXZPhase + i) ) ;
+            xPosition = Mathf.Sin(alpha ) * Mathf.PI * (Mathf.Cos(offsetAtXZPhase + i) );
             zPosition = Mathf.Sin(alpha ) * Mathf.PI * (Mathf.Sin(offsetAtXZPhase + i) );
             yPosition = Mathf.Cos(alpha ) * Mathf.PI;
 
@@ -144,75 +137,20 @@ private Dictionary<int, float3> GenerateRow(int numberofOrbitationsPerCycle, flo
         }
         return sphericalRow;
     }
-    public quaternion GetRotationTowardsPointZeroFor(float3 localPosition)
+    private quaternion GetRotationTowardsPointZeroFor(float3 localPosition)
     {
-
-        float y = localPosition.y;
-        float z = localPosition.z;
-        float x = localPosition.x;
-
-        if(y < 1 && y > -1) { y = 1; }
-        if(x < 1 && x > -1) { y = 1; }
-        if(z < 1 && z > -1) { z = 1; }
-
-        float rotationZ = math.atan(math.abs(y) / math.abs(x));
-        float rotationY = math.atan(math.abs(z) / math.abs(x));
-
-
-        SphereArea area = GetArea(localPosition);
-        if(area == SphereArea.I)
-        {
-            rotationY *= -1;
-        }
-        else if(area == SphereArea.II)
-        {
-            rotationY = -180 + rotationY;
-        }
-        else if (area == SphereArea.III)
-        {
-            rotationY = -260 + rotationY;
-        }
-        else if (area == SphereArea.IV)
-        {
-            rotationY = -360 + rotationY;
-        }
-        else if (area == SphereArea.V)
-        {
-            rotationZ *= -1;
-        }
-        else if (area == SphereArea.VI)
-        {
-            rotationY -= 90;
-            rotationZ *= -1;
-        }
-        else if (area == SphereArea.VII)
-        {
-            rotationY -= 180;
-            rotationZ *= -1;
-        }
-        else if (area == SphereArea.VIII)
-        {
-            rotationY -= 260;
-            rotationZ *= -1;
-        }
-
-        
-        quaternion rotation = quaternion.Euler(0, rotationY, rotationZ, math.RotationOrder.ZYX);
-
+        quaternion rotation = quaternion.LookRotationSafe((localPosition - float3.zero), new float3(0, 1, 0));
         return rotation;
     }
-    public SphereArea GetArea(float3 localPosition)
+    private int DefineRowTypeFromGivenRowIndex(int givenIndex)
     {
-        SphereArea area = new SphereArea();
-        if (localPosition.x >= 0 && localPosition.y >= 0 && localPosition.z >= 0) { area = SphereArea.I; }
-        else if (localPosition.x < 0 && localPosition.y >= 0 && localPosition.z >= 0) { area = SphereArea.II; }
-        else if (localPosition.x < 0 && localPosition.y >= 0 && localPosition.z < 0) { area = SphereArea.III; }
-        else if (localPosition.x >= 0 && localPosition.y >= 0 && localPosition.z < 0) { area = SphereArea.IV; }
-        else if (localPosition.x >= 0 && localPosition.y < 0 && localPosition.z >= 0) { area = SphereArea.V; }
-        else if (localPosition.x < 0 && localPosition.y < 0 && localPosition.z >= 0) { area = SphereArea.VI; }
-        else if (localPosition.x < 0 && localPosition.y < 0 && localPosition.z < 0) { area = SphereArea.VII; }
-        else if (localPosition.x >= 0 && localPosition.y < 0 && localPosition.z < 0) { area = SphereArea.VIII; }
-        return area;
+        // there are 3 types of rows , visualizeing lows , mids , and highs .    Bass  spreads across all 
+        // this is just definening 1 ,2 ,3  and for the next on loopng back to 1, .. and again  
+        for(int i = 1; i <= SphericalRowsCount/3; i++)
+        {
+            if (givenIndex > i * 3 && givenIndex <= i * 3 + 3) { return givenIndex - 3 * i; }
+        }
+        return givenIndex;
     }
     public VisualizerBuilder()
     {

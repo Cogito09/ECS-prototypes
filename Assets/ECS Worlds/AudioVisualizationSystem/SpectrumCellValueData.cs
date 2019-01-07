@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Entities;
 
-public struct SpectrumCellValueData : IComponentData
+public struct SpectrumCellIdentityData : IComponentData
 {
-    public float Value;
+    public int RowIndex;
+    public int CellIndexInRow;
 }

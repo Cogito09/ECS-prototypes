@@ -7,26 +7,26 @@ using Unity.Jobs;
 using Unity.Burst;
 using Unity.Transforms;
 
-[BurstCompile]
-public class AudioVisualizeSoundSystem : JobComponentSystem
-{
-    protected override void OnCreateManager()
-    {
-        base.OnCreateManager();
-    }
-    public struct VisualizeAudioJob : IJobProcessComponentData<Scale>
-    {
-        public void Execute(ref Scale scale)
-        {
-            scale.Value.z += 0.001f;
-        }
-    }
+//[BurstCompile]
+//public class AudioVisualizeSoundSystem : JobComponentSystem
+//{
+//    protected override void OnCreateManager()
+//    {
+//        base.OnCreateManager();
+//    }
+//    public struct VisualizeAudioJob : IJobProcessComponentData<Scale>
+//    {
+//        public void Execute(ref Scale scale)
+//        {
+//            scale.Value.z += 0.001f;
+//        }
+//    }
 
-    protected override JobHandle OnUpdate(JobHandle inputDeps)
-    {
-        VisualizeAudioJob visualizeAudioJob = new VisualizeAudioJob()
-        { };
+//    protected override JobHandle OnUpdate(JobHandle inputDeps)
+//    {
+//        VisualizeAudioJob visualizeAudioJob = new VisualizeAudioJob()
+//        { };
 
-        return visualizeAudioJob.Schedule(this, inputDeps);
-    }
-}
+//        return visualizeAudioJob.Schedule(this, inputDeps);
+//    }
+//}
